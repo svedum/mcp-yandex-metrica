@@ -11,7 +11,7 @@ Ask Ads).
 ## Установка
 
 ```bash
-npx -y @svedum/mcp-yandex-metrica@0.1.0
+npx -y @svedum/mcp-yandex-metrica@0.1.1
 ```
 
 ### Внешний MCP-клиент
@@ -21,7 +21,7 @@ npx -y @svedum/mcp-yandex-metrica@0.1.0
   "mcpServers": {
     "yandex-metrica": {
       "command": "npx",
-      "args": ["-y", "@svedum/mcp-yandex-metrica@0.1.0"],
+      "args": ["-y", "@svedum/mcp-yandex-metrica@0.1.1"],
       "env": {
         "YANDEX_METRIKA_TOKEN": "<OAuth access token, scope metrika:read>"
       }
