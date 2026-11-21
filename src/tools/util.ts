@@ -1,0 +1,112 @@
+import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
+import { z } from "zod";
+import type { YandexMetrikaClient } from "../client.js";
+import { noteFailure } from "../telemetry.js";
+
+/** Resolves the counter id from the tool arg or the configured default. */
+export function resolveCounter(
+  counterId: number | undefined,
+  client: YandexMetrikaClient,
+): number | undefined {
+  return counterId ?? client.defaultCounterId;
+}
+
+/**
+ * The `counterId` field, shaped by the config: with YANDEX_METRIKA_COUNTER_ID set it is optional
+ * and falls back to it; without it the schema says required. An optional field with no default
+ * behind it read to the consuming model as "may be omitted", and every such call failed.
+ * A factory for the same `$ref` reason as metrikaDate.
+ */
+export const counterIdField = (client: YandexMetrikaClient) =>
+  client.defaultCounterId === undefined
+    ? z.number().int().describe("Идентификатор счётчика из list_counters.")
+    : z.number().int().optional().describe("Идентификатор счётчика. По умолчанию YANDEX_METRIKA_COUNTER_ID.");
+
+/** The description's last sentence about counterId, matching counterIdField. */
+export const counterIdNote = (client: YandexMetrikaClient): string =>
+  client.defaultCounterId === undefined
+    ? " counterId обязателен: id счётчика даёт list_counters."
+    : " Если counterId не передан, берётся YANDEX_METRIKA_COUNTER_ID.";
+
+/**
+ * A Metrica date: an ISO day (YYYY-MM-DD) or a relative token the Stat API
+ * accepts (today, yesterday, NdaysAgo).
+ *
+ * A FACTORY (not a shared const): reusing one zod object across fields makes
+ * zod-to-json-schema dedupe them into a `$ref` (e.g. date2 → #/properties/date1),
+ * which some tool-schema consumers (OpenAI Apps review) don't dereference and
+ * flag as `any`. A fresh object per field keeps each one inlined with its type+pattern.
+ */
+export const metrikaDate = () =>
+  z
+    .string()
+    .regex(
+      /^(\d{4}-\d{2}-\d{2}|today|yesterday|\d+daysAgo)$/,
+      "Ожидается YYYY-MM-DD или относительная дата (today, yesterday, NdaysAgo)",
+    );
+
+/** Wraps a value as a compact-JSON tool result (compact: the consumer is an LLM). */
+export function ok(data: unknown): CallToolResult {
+  const text = typeof data === "string" ? data : JSON.stringify(data);
+  return { content: [{ type: "text", text: text ?? "null" }] };
+}
+
+/** Also notes the failure's origin for telemetry (noteFailure). */
+export function fail(err: unknown): CallToolResult {
+  return noteFailure(failText(err), err);
+}
+
+function failText(err: unknown): CallToolResult {
+  const message = err instanceof Error ? err.message : String(err);
+  return { content: [{ type: "text", text: `Ошибка: ${message}` }], isError: true };
+}
+
+/** Drops keys whose value is `undefined` so they are not sent to the API. */
+export function compact<T extends Record<string, unknown>>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
+}
+
+/** Joins a list into a comma-separated value, or undefined when empty. */
+export function csv(values?: Array<string | number>): string | undefined {
+  return values && values.length ? values.join(",") : undefined;
+}
+
+/**
+ * MCP tool annotations — hints the consuming client can use to gate or label a
+ * tool (e.g. auto-approve reads, warn before writes). Every tool here talks to
+ * the remote Metrica API, so openWorldHint is always true.
+ *
+ *   READ_ONLY    — get/list tools; never mutate.
+ *   WRITE_CREATE — create tools; introduce new objects.
+ *   WRITE_UPDATE — update tools; re-applying the same input is idempotent.
+ *   WRITE_DELETE — delete tools and raw_request.
+ */
+// All four hints set explicitly: some clients (OpenAI Apps review) require readOnlyHint,
+// destructiveHint and openWorldHint on every tool. Read-only tools never mutate, so they
+// are non-destructive and idempotent (re-reading yields the same result).
+export const READ_ONLY = {
+  readOnlyHint: true,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+export const WRITE_CREATE = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: false,
+  openWorldHint: true,
+} as const;
+export const WRITE_UPDATE = {
+  readOnlyHint: false,
+  destructiveHint: false,
+  idempotentHint: true,
+  openWorldHint: true,
+} as const;
+export const WRITE_DELETE = {
+  readOnlyHint: false,
+  destructiveHint: true,
+  idempotentHint: false,
+  openWorldHint: true,
+} as const;

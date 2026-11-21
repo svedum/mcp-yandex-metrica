@@ -1,0 +1,59 @@
+{
+  "name": "@svedum/mcp-yandex-metrica",
+  "version": "0.1.0",
+  "description": "MCP server for the Yandex Metrica API — list counters and goals, pull web-analytics statistics from AI agents (Svedum OAuth fork).",
+  "mcpName": "io.github.svedum/mcp-yandex-metrica",
+  "type": "module",
+  "bin": {
+    "mcp-yandex-metrica": "dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "rm -rf dist && tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx watch src/index.ts",
+    "typecheck": "tsc -p tsconfig.check.json",
+    "smoke": "node --import tsx src/smoke.ts",
+    "test": "node --import tsx --test $(find src -name '*.test.ts')",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "yandex",
+    "yandex-metrica",
+    "yandex-metrika",
+    "analytics",
+    "web-analytics",
+    "svedum"
+  ],
+  "license": "MIT",
+  "author": "Svedum",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/svedum/mcp-yandex-metrica.git"
+  },
+  "homepage": "https://github.com/svedum/mcp-yandex-metrica#readme",
+  "bugs": {
+    "url": "https://github.com/svedum/mcp-yandex-metrica/issues"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.9.3",
+    "tsx": "^4.22.4",
+    "typescript": "^5.7.0"
+  }
+}
