@@ -1,6 +1,6 @@
 {
   "name": "@svedum/mcp-yandex-metrica",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "MCP server for the Yandex Metrica API — list counters and goals, pull web-analytics statistics from AI agents (Svedum OAuth fork).",
   "mcpName": "io.github.svedum/mcp-yandex-metrica",
   "type": "module",
